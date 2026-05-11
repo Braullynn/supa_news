@@ -1,6 +1,6 @@
 import { NewsService, RawArticle } from './news-service';
 import { ContentService } from './content-service';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 
 export const NewsBot = {
@@ -34,8 +34,8 @@ export const NewsBot = {
           // Implementação da lógica de Retry que você pediu:
           let imageUrl = await this.generateImageWithRetry(imagePrompt, article.category);
 
-          // 5. Salvar no Supabase
-          const { error } = await supabase.from('noticias').insert([{
+          // 5. Salvar no Supabase (usando cliente Admin para ignorar RLS)
+          const { error } = await supabaseAdmin.from('noticias').insert([{
             titulo: rewritten.titulo,
             conteudo: rewritten.conteudo,
             resumo: rewritten.resumo,
@@ -76,7 +76,7 @@ export const NewsBot = {
         // Aqui entrará a chamada real para a API de imagem (Nano Banana / Pollinations)
         // Por enquanto, simulando ou usando Pollinations (Grátis e Funciona sempre para testes)
         const encodedPrompt = encodeURIComponent(prompt);
-        const url = `https://pollinations.ai/p/${encodedPrompt}?width=1000&height=600&seed=${Math.floor(Math.random() * 1000)}&nologo=true`;
+        const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1000&height=600&seed=${Math.floor(Math.random() * 1000)}&nologo=true`;
         
         // Verificar se a imagem é válida (opcional)
         return url;

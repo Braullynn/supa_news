@@ -1,6 +1,7 @@
 import Header from "@/components/Header";
 import { supabase } from "@/lib/supabase";
 import Image from "next/image";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 export const revalidate = 3600;
@@ -16,8 +17,9 @@ async function getArticle(id: string) {
   return data;
 }
 
-export async function generateMetadata({ params }: { params: { id: string } }) {
-  const article = await getArticle(params.id);
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const article = await getArticle(id);
   if (!article) return { title: 'Notícia não encontrada' };
 
   return {
@@ -31,8 +33,9 @@ export async function generateMetadata({ params }: { params: { id: string } }) {
   };
 }
 
-export default async function Page({ params }: { params: { id: string } }) {
-  const article = await getArticle(params.id);
+export default async function Page({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const article = await getArticle(id);
 
   if (!article) {
     notFound();
@@ -66,6 +69,7 @@ export default async function Page({ params }: { params: { id: string } }) {
               src={article.imagem_url} 
               alt={article.titulo} 
               fill 
+              sizes="(max-width: 1200px) 100vw, 80vw"
               className="object-cover"
             />
           </div>
@@ -86,12 +90,12 @@ export default async function Page({ params }: { params: { id: string } }) {
           >
             &larr; Ler fonte original
           </a>
-          <button 
-            onClick={() => window.history.back()}
+          <Link 
+            href="/"
             className="text-xs font-bold uppercase tracking-widest hover:underline"
           >
             Voltar ao jornal
-          </button>
+          </Link>
         </div>
       </article>
 

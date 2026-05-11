@@ -6,6 +6,7 @@ node_modules/
 # Next.js
 .next/
 out/
+next-env.d.ts
 
 # Ambiente e Chaves (CRÍTICO)
 .env
@@ -29,3 +30,4 @@ yarn-error.log*
 # Sistema
 .DS_Store
 Thumbs.db
+.test/

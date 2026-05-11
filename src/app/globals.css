@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: 'Olde English';
+  src: url('/fonts/OldeEnglish.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
 :root {
   --background: #fdfcf8; /* Off-white papel */
   --foreground: #1a1a1a; /* Preto editorial */
@@ -11,7 +18,7 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-accent: var(--accent);
-  --font-old-english: 'UnifrakturMaguntia', serif;
+  --font-old-english: 'Olde English', serif;
   --font-serif-news: 'Playfair Display', serif;
 }
 
