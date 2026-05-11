@@ -22,7 +22,7 @@ async function getNews() {
 
 export default async function Home() {
   const news = await getNews();
-  
+
   if (!news || news.length === 0) {
     return (
       <main className="min-h-screen pb-16">
@@ -41,22 +41,22 @@ export default async function Home() {
   return (
     <main className="min-h-screen pb-16">
       <Header />
-      
+
       <div className="newspaper-grid mt-8">
         {/* Notícia Principal */}
-        <NewsCard 
+        <NewsCard
           id={mainNews.id}
           titulo={mainNews.titulo}
           resumo={mainNews.resumo}
           imagem_url={mainNews.imagem_url}
           categoria={mainNews.categoria}
-          isMain 
+          isMain
         />
 
         {/* Sidebar com Notícias em Alta e Calendário */}
         <aside className="col-span-12 lg:col-span-4 border-l border-gray-200 lg:pl-6 space-y-8">
           <CalendarSidebar />
-          
+
           <div className="mb-8">
             <h3 className="text-xl font-bold uppercase tracking-tighter border-b-4 border-black mb-4">Em Alta</h3>
             <div className="flex flex-col gap-6">
@@ -75,7 +75,7 @@ export default async function Home() {
         {/* Notícias Secundárias (Fila Inferior - Visível em Mobile/Tablet) */}
         <div className="col-span-12 lg:hidden flex flex-col gap-8">
           {otherNews.map((item) => (
-            <NewsCard 
+            <NewsCard
               key={item.id}
               id={item.id}
               titulo={item.titulo}
@@ -88,7 +88,7 @@ export default async function Home() {
       </div>
 
       <footer className="mt-16 pt-8 border-t-2 border-black text-center text-xs font-bold uppercase tracking-widest">
-        &copy; 2026 Supa News! - O seu jornal automatizado
+        &copy; 2026 Supa News!
       </footer>
     </main>
   );

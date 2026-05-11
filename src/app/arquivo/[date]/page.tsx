@@ -30,7 +30,7 @@ export default async function ArchivePage({ params }: { params: { date: string }
   return (
     <main className="min-h-screen pb-16">
       <Header />
-      
+
       <div className="mt-8 border-b-2 border-black pb-2 mb-8">
         <h2 className="text-sm font-bold uppercase tracking-widest text-gray-500">Arquivo de Notícias</h2>
         <h1 className="text-3xl font-serif-news font-bold">{formattedDate}</h1>
@@ -41,7 +41,7 @@ export default async function ArchivePage({ params }: { params: { date: string }
           {news.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {news.map((item) => (
-                <NewsCard 
+                <NewsCard
                   key={item.id}
                   id={item.id}
                   titulo={item.titulo}
@@ -64,7 +64,7 @@ export default async function ArchivePage({ params }: { params: { date: string }
       </div>
 
       <footer className="mt-16 pt-8 border-t-2 border-black text-center text-xs font-bold uppercase tracking-widest">
-        &copy; 2026 Supa News! - O seu jornal automatizado
+        &copy; 2026 Supa News!
       </footer>
     </main>
   );

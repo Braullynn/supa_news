@@ -44,7 +44,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   return (
     <main className="min-h-screen pb-16">
       <Header />
-      
+
       <article className="max-w-4xl mx-auto mt-12">
         <div className="text-center mb-8">
           <span className="tag-category mb-4">{article.categoria}</span>
@@ -57,7 +57,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
         </div>
 
         <div className="news-divider"></div>
-        
+
         <div className="flex justify-between items-center text-xs uppercase font-bold tracking-widest mb-8">
           <span>Fonte: {article.fonte_nome}</span>
           <span>{new Date(article.data_publicacao).toLocaleDateString('pt-BR')}</span>
@@ -65,10 +65,10 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
 
         {article.imagem_url && (
           <div className="relative aspect-video w-full mb-12 border border-black grayscale hover:grayscale-0 transition-all duration-700">
-            <Image 
-              src={article.imagem_url} 
-              alt={article.titulo} 
-              fill 
+            <Image
+              src={article.imagem_url}
+              alt={article.titulo}
+              fill
               sizes="(max-width: 1200px) 100vw, 80vw"
               className="object-cover"
             />
@@ -82,15 +82,15 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
         </div>
 
         <div className="mt-16 pt-8 border-t border-black flex justify-between items-center">
-          <a 
-            href={article.fonte_url} 
-            target="_blank" 
+          <a
+            href={article.fonte_url}
+            target="_blank"
             rel="noopener noreferrer"
             className="text-xs font-bold uppercase tracking-widest hover:underline"
           >
             &larr; Ler fonte original
           </a>
-          <Link 
+          <Link
             href="/"
             className="text-xs font-bold uppercase tracking-widest hover:underline"
           >
@@ -100,7 +100,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
       </article>
 
       <footer className="mt-16 pt-8 border-t-2 border-black text-center text-xs font-bold uppercase tracking-widest">
-        &copy; 2026 Supa News! - O seu jornal automatizado
+        &copy; 2026 Supa News!
       </footer>
     </main>
   );
