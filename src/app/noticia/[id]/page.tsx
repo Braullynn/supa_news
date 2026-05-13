@@ -71,6 +71,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
               fill
               sizes="(max-width: 1200px) 100vw, 80vw"
               className="object-cover"
+              priority
             />
           </div>
         )}
