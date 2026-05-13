@@ -2,12 +2,14 @@ import { NewsService, RawArticle } from './news-service';
 import { ContentService } from './content-service';
 import { supabaseAdmin } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
+import { CloudflareAI } from '@/lib/cloudflare-ai';
+import sharp from 'sharp';
 
 export const NewsBot = {
-  async runPipeline() {
+  async runPipeline(customDate?: string) {
     const PROCESS_NAME = 'NewsBot_Pipeline';
     try {
-      logger.info(PROCESS_NAME, 'Iniciando pipeline diária...');
+      logger.info(PROCESS_NAME, `Iniciando pipeline... ${customDate ? '(Data customizada: ' + customDate + ')' : ''}`);
 
       // 1. Buscar Notícias
       const techRaw = await NewsService.fetchTechNews();
@@ -30,12 +32,11 @@ export const NewsBot = {
           // 3. Gerar Prompt de Imagem
           const imagePrompt = await ContentService.generateImagePrompt(rewritten.titulo, rewritten.resumo);
 
-          // 4. Geração de Imagem (Placeholder por enquanto até validar API de imagem específica)
-          // Implementação da lógica de Retry que você pediu:
+          // 4. Geração de Imagem com Retry e Upload para Storage
           let imageUrl = await this.generateImageWithRetry(imagePrompt, article.category);
 
-          // 5. Salvar no Supabase (usando cliente Admin para ignorar RLS)
-          const { error } = await supabaseAdmin.from('noticias').insert([{
+          // 5. Salvar no Supabase
+          const insertData: any = {
             titulo: rewritten.titulo,
             conteudo: rewritten.conteudo,
             resumo: rewritten.resumo,
@@ -44,11 +45,21 @@ export const NewsBot = {
             fonte_nome: article.source,
             fonte_url: article.url,
             slug: this.slugify(rewritten.titulo)
-          }]);
+          };
+
+          // Se tiver data customizada, adiciona ao insert
+          if (customDate) {
+            insertData.data_publicacao = customDate;
+          }
+
+          const { error } = await supabaseAdmin.from('noticias').insert([insertData]);
 
           if (error) throw error;
           
           logger.info(PROCESS_NAME, `Notícia publicada: ${rewritten.titulo}`);
+
+          // 6. Limpeza automática do Bucket
+          await this.cleanupOldImages();
 
         } catch (err: any) {
           logger.error(PROCESS_NAME, `Erro ao processar artigo: ${article.title}`, err.message);
@@ -65,30 +76,126 @@ export const NewsBot = {
 
   async generateImageWithRetry(prompt: string, category: string): Promise<string> {
     const PROCESS = 'ImageGeneration';
-    let attempts = 0;
-    const maxAttempts = 2; // Tentativa original + 1 retry
-
-    while (attempts < maxAttempts) {
-      try {
-        attempts++;
-        logger.info(PROCESS, `Tentativa ${attempts} de gerar imagem para categoria ${category}`);
-        
-        // Aqui entrará a chamada real para a API de imagem (Nano Banana / Pollinations)
-        // Por enquanto, simulando ou usando Pollinations (Grátis e Funciona sempre para testes)
-        const encodedPrompt = encodeURIComponent(prompt);
-        const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1000&height=600&seed=${Math.floor(Math.random() * 1000)}&nologo=true`;
-        
-        // Verificar se a imagem é válida (opcional)
-        return url;
-
-      } catch (err) {
-        if (attempts >= maxAttempts) {
-          logger.warn(PROCESS, 'Todas as tentativas falharam. Usando placeholder.');
-          return this.getPlaceholderByCategory(category);
-        }
+    
+    // TENTATIVA 1: Cloudflare Workers AI
+    try {
+      logger.info(PROCESS, 'Tentativa 1: Cloudflare Workers AI');
+      const imageBuffer = await CloudflareAI.generateImage(prompt);
+      
+      if (imageBuffer) {
+        const publicUrl = await this.uploadToStorage(imageBuffer);
+        if (publicUrl) return publicUrl;
       }
+    } catch (err: any) {
+      logger.warn(PROCESS, `Falha na Cloudflare: ${err.message}`);
     }
+
+    // TENTATIVA 2: Fallback Pollinations (Baixando e subindo pro Storage)
+    try {
+      logger.info(PROCESS, 'Tentativa 2: Fallback Pollinations (modelo flux)');
+      const encodedPrompt = encodeURIComponent(prompt);
+      const pollinationsUrl = `https://gen.pollinations.ai/prompt/${encodedPrompt}?width=1000&height=600&model=flux&nologo=true&seed=${Math.floor(Math.random() * 10000)}`;
+      
+      const response = await fetch(pollinationsUrl);
+      if (response.ok) {
+        const arrayBuffer = await response.arrayBuffer();
+        const publicUrl = await this.uploadToStorage(Buffer.from(arrayBuffer));
+        if (publicUrl) return publicUrl;
+      }
+    } catch (err: any) {
+      logger.warn(PROCESS, `Falha no Pollinations Fallback: ${err.message}`);
+    }
+
+    // FALLBACK FINAL: Placeholder Unsplash
+    logger.warn(PROCESS, 'Todas as tentativas de geração falharam. Usando placeholder.');
     return this.getPlaceholderByCategory(category);
+  },
+
+  async uploadToStorage(buffer: Buffer): Promise<string | null> {
+    const PROCESS = 'StorageUpload';
+    try {
+      // COMPRESSÃO: PNG (Cloudflare) -> JPEG (800x450)
+      // Otimizado para até 1MB, mas geralmente fica em ~150KB
+      let processedBuffer = await sharp(buffer)
+        .resize(800, 450, { fit: 'cover', position: 'top' })
+        .jpeg({ quality: 85, progressive: true })
+        .toBuffer();
+
+      // Double check: Se ainda for maior que 1MB, reduzimos a qualidade drasticamente
+      if (processedBuffer.length > 1024 * 1024) {
+        processedBuffer = await sharp(processedBuffer)
+          .jpeg({ quality: 60 })
+          .toBuffer();
+      }
+
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 7)}.jpg`;
+      const filePath = `noticias-imagens/${fileName}`;
+
+      const { data, error } = await supabaseAdmin.storage
+        .from('noticias-imagens')
+        .upload(filePath, processedBuffer, {
+          contentType: 'image/jpeg',
+          upsert: true
+        });
+
+      if (error) throw error;
+
+      const { data: { publicUrl } } = supabaseAdmin.storage
+        .from('noticias-imagens')
+        .getPublicUrl(filePath);
+
+      logger.info(PROCESS, `Upload concluído: ${publicUrl} (${(processedBuffer.length / 1024).toFixed(1)} KB)`);
+      return publicUrl;
+    } catch (error: any) {
+      logger.error(PROCESS, 'Erro ao processar/fazer upload da imagem', error.message);
+      return null;
+    }
+  },
+
+  async cleanupOldImages() {
+    const PROCESS = 'StorageCleanup';
+    const LIMIT = 35;
+    const REMOVE_COUNT = 5;
+
+    try {
+      // 1. Listar arquivos ordenados por nome (timestamp)
+      const { data: files, error } = await supabaseAdmin.storage
+        .from('noticias-imagens')
+        .list('noticias-imagens', { 
+          sortBy: { column: 'name', order: 'asc' } 
+        });
+
+      if (error || !files || files.length <= LIMIT) return;
+
+      // 2. Identificar os 5 mais antigos
+      const toDelete = files.slice(0, REMOVE_COUNT);
+      const pathsToDelete = toDelete.map(f => `noticias-imagens/${f.name}`);
+      
+      logger.info(PROCESS, `Iniciando limpeza: removendo ${REMOVE_COUNT} imagens antigas...`);
+
+      // 3. Antes de excluir, atualizar as notícias no banco para o placeholder (Opção B)
+      for (const file of toDelete) {
+        const { data: { publicUrl } } = supabaseAdmin.storage
+          .from('noticias-imagens')
+          .getPublicUrl(`noticias-imagens/${file.name}`);
+
+        await supabaseAdmin
+          .from('noticias')
+          .update({ imagem_url: this.getPlaceholderByCategory('fallback') })
+          .eq('imagem_url', publicUrl);
+      }
+
+      // 4. Excluir do Storage
+      const { error: deleteError } = await supabaseAdmin.storage
+        .from('noticias-imagens')
+        .remove(pathsToDelete);
+
+      if (deleteError) throw deleteError;
+
+      logger.info(PROCESS, `Limpeza concluída com sucesso.`);
+    } catch (error: any) {
+      logger.error(PROCESS, 'Erro na rotina de limpeza do bucket', error.message);
+    }
   },
 
   getPlaceholderByCategory(category: string): string {

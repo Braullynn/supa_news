@@ -5,7 +5,15 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
+        hostname: 'ymtrembvtugopztnyfsk.supabase.co',
+      },
+      {
+        protocol: 'https',
         hostname: 'pollinations.ai',
+      },
+      {
+        protocol: 'https',
+        hostname: 'gen.pollinations.ai',
       },
       {
         protocol: 'https',

@@ -8,9 +8,9 @@ import { ptBR } from "date-fns/locale";
 export const revalidate = 3600;
 
 async function getNewsByDate(dateStr: string) {
-  // Define o início e o fim do dia para o filtro
-  const startOfDay = `${dateStr}T00:00:00.000Z`;
-  const endOfDay = `${dateStr}T23:59:59.999Z`;
+  // Define o início e o fim do dia para o filtro (removendo o Z para evitar trava de fuso UTC rígido)
+  const startOfDay = `${dateStr}T00:00:00`;
+  const endOfDay = `${dateStr}T23:59:59`;
 
   const { data, error } = await supabase
     .from('noticias')
@@ -19,13 +19,17 @@ async function getNewsByDate(dateStr: string) {
     .lte('data_publicacao', endOfDay)
     .order('data_publicacao', { ascending: false });
 
-  if (error) return [];
+  if (error) {
+    console.error('Erro no Supabase:', error);
+    return [];
+  }
   return data;
 }
 
-export default async function ArchivePage({ params }: { params: { date: string } }) {
-  const news = await getNewsByDate(params.date);
-  const formattedDate = format(parseISO(params.date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
+export default async function ArchivePage({ params }: { params: Promise<{ date: string }> }) {
+  const { date } = await params;
+  const news = await getNewsByDate(date);
+  const formattedDate = format(parseISO(date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
 
   return (
     <main className="min-h-screen pb-16">

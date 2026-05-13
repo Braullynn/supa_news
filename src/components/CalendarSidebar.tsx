@@ -1,14 +1,19 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday } from 'date-fns';
+import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 export default function CalendarSidebar() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const router = useRouter();
+  const params = useParams();
+  
+  // Extrair a data selecionada da URL se houver
+  const selectedDateStr = params?.date as string;
+  const selectedDate = selectedDateStr ? parseISO(selectedDateStr) : null;
 
   const days = eachDayOfInterval({
     start: startOfMonth(currentMonth),
@@ -44,19 +49,24 @@ export default function CalendarSidebar() {
           <div key={`empty-${i}`} />
         ))}
         
-        {days.map((day) => (
-          <button
-            key={day.toString()}
-            onClick={() => handleDateClick(day)}
-            className={`
-              h-7 w-7 text-[11px] flex items-center justify-center transition-colors
-              ${isToday(day) ? 'bg-accent text-white font-bold' : 'hover:bg-black hover:text-white'}
-              border border-transparent
-            `}
-          >
-            {format(day, 'd')}
-          </button>
-        ))}
+        {days.map((day) => {
+          const isSelected = selectedDate && isSameDay(day, selectedDate);
+          const isCurrentToday = isToday(day);
+
+          return (
+            <button
+              key={day.toString()}
+              onClick={() => handleDateClick(day)}
+              className={`
+                h-7 w-7 text-[11px] flex items-center justify-center transition-colors
+                ${isSelected ? 'bg-black text-white font-bold' : isCurrentToday ? 'bg-red-600 text-white font-bold' : 'hover:bg-gray-100'}
+                border border-transparent
+              `}
+            >
+              {format(day, 'd')}
+            </button>
+          );
+        })}
       </div>
 
       <div className="mt-6">

@@ -12,7 +12,8 @@ O **Supa News!** é um jornal digital totalmente automatizado. Ele utiliza IA pa
 - **Linguagem:** TypeScript
 - **Banco de Dados:** Supabase (PostgreSQL)
 - **IA de Texto/Processamento:** (a escolha do admin)
-- **IA de Imagem:** Pollinations AI / Nano (via prompt do Gemini)
+- **IA de Imagem:** Cloudflare Workers AI (SDXL) com Fallback Pollinations (modelo flux)
+- **Armazenamento:** Supabase Storage (Bucket: noticias-imagens)
 - **Estilização:** Tailwind CSS (Estilo editorial/jornalístico)
 - **APIs de Notícias:** GNews API & Google News RSS
 
