@@ -1,12 +1,32 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { NewsBot } from '@/services/news-bot';
 import { logger } from '@/lib/logger';
+import { isRateLimited } from '@/lib/rate-limiter';
 
-export async function GET() {
+const CRON_SECRET = process.env.CRON_SECRET;
+
+export async function GET(request: NextRequest) {
   const PROCESS = 'API_EXECUTE';
   
+  // 1. Rate Limiting
+  if (isRateLimited()) {
+    logger.warn(PROCESS, 'Rate limit atingido para execução da pipeline');
+    return NextResponse.json({ error: 'Too Many Requests' }, { status: 429 });
+  }
+
+  // 2. Autenticação
+  const authHeader = request.headers.get('authorization');
+  const cronHeader = request.headers.get('x-cron-secret'); // Para Vercel Cron
+
+  if (authHeader !== `Bearer ${CRON_SECRET}` && cronHeader !== CRON_SECRET) {
+    logger.warn(PROCESS, 'Tentativa de acesso não autorizada', {
+      ip: request.headers.get('x-forwarded-for'),
+    });
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
-    logger.info(PROCESS, 'Execução manual disparada via API');
+    logger.info(PROCESS, 'Execução autorizada disparada via API');
     
     // Executa a pipeline do bot
     const result = await NewsBot.runPipeline();

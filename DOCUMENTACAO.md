@@ -66,26 +66,41 @@ src/
 O `NewsBot.runPipeline()` executa os seguintes passos:
 1.  **Fetch:** Busca notícias Tech (via GNews) e Trending (via RSS).
 2.  **Selection:** Filtra os artigos mais relevantes.
-3.  **Rewrite:** Envia o título e descrição para o Gemini transformar em um texto original e profissional no estilo "Supa News!".
-4.  **Imagery:** 
+3.  **Rewrite:** Envia o conteúdo para o Gemini/Groq para reformulação profissional.
+4.  **Sanitization & Validation:**
+    - O texto é limpo de tags HTML e caracteres indesejados.
+    - É validado por um motor de qualidade (idioma, pontuação, tamanho, repetição).
+    - **Retry (Option B):** Se reprovado, a IA tenta corrigir o texto uma vez com um prompt mais rígido.
+5.  **Imagery:** 
     - O Gemini gera um prompt de imagem em inglês.
     - O bot consome uma API de imagem com lógica de **Retry**.
     - Se falhar, usa um placeholder estético baseado na categoria.
-5.  **Persistence:** Salva a notícia e os logs no Supabase.
+6.  **Persistence:** Salva a notícia e os logs (higienizados de segredos) no Supabase.
+
+---
+
+## 🔒 Segurança e Boas Práticas
+- **Autenticação:** O endpoint `/api/noticias/executar` exige o header `Authorization: Bearer <CRON_SECRET>` ou `x-cron-secret`.
+- **Rate Limiting:** Limite de 3 execuções por hora para evitar consumo excessivo de APIs.
+- **Server-side Keys:** Chaves sensíveis como `GEMINI_API_KEY` não possuem o prefixo `NEXT_PUBLIC_` e nunca chegam ao navegador.
+- **Security Headers:** CSP, HSTS, X-Frame-Options e outras proteções ativas via `next.config.ts`.
+- **Log Sanitization:** O logger remove automaticamente chaves de API e tokens JWT dos logs antes de persistir.
 
 ---
 
 ## 🔑 Variáveis de Ambiente (.env)
-- `NEXT_PUBLIC_GEMINI_API_KEY`: Chave do Google AI Studio.
+- `GEMINI_API_KEY`: Chave do Google AI Studio (Server-side).
+- `GROQ_API_KEY`: Chave para Groq SDK.
 - `NEXT_PUBLIC_SUPABASE_URL`: URL do projeto Supabase.
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Chave anon do Supabase (para o cliente).
-- `SUPABASE_SERVICE_ROLE_KEY`: Chave administrativa (para logs e escrita).
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Chave anon do Supabase.
+- `SUPABASE_SERVICE_ROLE_KEY`: Chave administrativa (Server-side).
 - `GNEWS_API_KEY`: Chave para busca de notícias.
+- `CRON_SECRET`: Token aleatório para proteger o endpoint de execução.
 
 ---
 
 ## 🚀 Comandos Úteis
 - `npm run dev`: Inicia o ambiente de desenvolvimento.
-- `GET /api/noticias/executar`: Dispara o bot manualmente.
+- `GET /api/noticias/executar`: Dispara o bot (Requer Header de Auth).
 
 

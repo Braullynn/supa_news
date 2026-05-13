@@ -3,12 +3,18 @@ import { ContentService } from './content-service';
 import { supabaseAdmin } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 import { CloudflareAI } from '@/lib/cloudflare-ai';
+import { sanitizeContent } from './content-sanitizer';
+import { validateQuality } from './content-validator';
 import sharp from 'sharp';
 
 export const NewsBot = {
   async runPipeline(customDate?: string) {
     const PROCESS_NAME = 'NewsBot_Pipeline';
     try {
+      if (customDate && !/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2})?/.test(customDate)) {
+        throw new Error(`Data customizada inválida: ${customDate}`);
+      }
+      
       logger.info(PROCESS_NAME, `Iniciando pipeline... ${customDate ? '(Data customizada: ' + customDate + ')' : ''}`);
 
       // 1. Buscar Notícias
@@ -25,9 +31,37 @@ export const NewsBot = {
 
       for (const article of selectedArticles) {
         try {
-          // 2. Reformular Conteúdo com Gemini
-          const rewritten = await ContentService.rewriteArticle(article.title, article.content || article.description);
+          // 2. Reformular Conteúdo com Gemini/Groq
+          let rewritten = await ContentService.rewriteArticle(article.title, article.content || article.description);
           if (!rewritten) continue;
+
+          // 2.5 — SANITIZAÇÃO E VALIDAÇÃO
+          rewritten.titulo = sanitizeContent(rewritten.titulo);
+          rewritten.resumo = sanitizeContent(rewritten.resumo);
+          rewritten.conteudo = sanitizeContent(rewritten.conteudo);
+
+          let validation = validateQuality(rewritten.titulo, rewritten.resumo, rewritten.conteudo);
+          
+          // Lógica de Re-tentativa (Option B)
+          if (!validation.approved) {
+            logger.warn(PROCESS_NAME, `Notícia reprovada na 1ª tentativa: ${rewritten.titulo}`, validation.issues);
+            
+            // Tentativa 2 com prompt mais rígido (usando o conteúdo já "quase bom" como base)
+            const repairPrompt = `CORRIJA ESTA NOTÍCIA. Erros detectados: ${validation.issues.join(', ')}. Texto atual: ${rewritten.conteudo}`;
+            rewritten = await ContentService.rewriteArticle(rewritten.titulo, repairPrompt);
+            
+            if (rewritten) {
+              rewritten.titulo = sanitizeContent(rewritten.titulo);
+              rewritten.resumo = sanitizeContent(rewritten.resumo);
+              rewritten.conteudo = sanitizeContent(rewritten.conteudo);
+              validation = validateQuality(rewritten.titulo, rewritten.resumo, rewritten.conteudo);
+            }
+          }
+
+          if (!validation.approved) {
+            logger.error(PROCESS_NAME, `Notícia reprovada após re-tentativa: ${article.title}`, validation.issues);
+            continue;
+          }
 
           // 3. Gerar Prompt de Imagem
           const imagePrompt = await ContentService.generateImagePrompt(rewritten.titulo, rewritten.resumo);

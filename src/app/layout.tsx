@@ -28,7 +28,7 @@ export default function RootLayout({
 
         {/* Script do Google Translate */}
         <Script
-          src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"
+          src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"
           strategy="afterInteractive"
         />
         <Script id="google-translate-init" strategy="afterInteractive">
