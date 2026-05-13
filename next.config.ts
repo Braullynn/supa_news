@@ -36,6 +36,10 @@ const nextConfig: NextConfig = {
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
           {
+            key: 'Content-Security-Policy',
+            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' va.vercel-scripts.com translate.google.com; style-src 'self' 'unsafe-inline' fonts.googleapis.com translate.googleapis.com; img-src 'self' data: blob: *.supabase.co *.pollinations.ai images.unsplash.com translate.google.com www.gstatic.com; font-src 'self' fonts.gstatic.com; connect-src 'self' *.supabase.co translate.googleapis.com vitals.vercel-insights.com; frame-src 'self' translate.google.com; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;"
+          },
+          {
             key: 'Strict-Transport-Security',
             value: 'max-age=63072000; includeSubDomains; preload'
           },
