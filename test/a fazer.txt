@@ -1,6 +1,0 @@
-apos texto de noticia criado, necessario uma analise pra
-encontrar erros de escrita.
-exemplo que se encontra atualmente:
-"O Rio Grande do Sul está prestes a contar com
- 'sistemi' de videomonitoramento"
- link de noticia: "http://localhost:3000/noticia/fe798f28-5c09-44d7-9be0-10fa70ce630b"
