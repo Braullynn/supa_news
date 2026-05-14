@@ -16,11 +16,12 @@ export async function GET(request: NextRequest) {
   // 2. Autenticação
   const authHeader = request.headers.get('authorization');
   
-  // Log de diagnóstico (seguro)
-  logger.debug(PROCESS, 'Verificando autorização', {
+  // Log de diagnóstico (seguro para INFO)
+  logger.info(PROCESS, 'Verificando autorização', {
     hasSecret: !!CRON_SECRET,
     hasAuthHeader: !!authHeader,
-    secretPrefix: CRON_SECRET ? CRON_SECRET.substring(0, 3) : 'N/A'
+    secretPrefix: CRON_SECRET ? CRON_SECRET.substring(0, 3) : 'N/A',
+    authHeaderPrefix: authHeader ? authHeader.substring(0, 10) : 'N/A'
   });
 
   const isValid = authHeader === `Bearer ${CRON_SECRET}`;
