@@ -3,10 +3,9 @@ import { NewsBot } from '@/services/news-bot';
 import { logger } from '@/lib/logger';
 import { isRateLimited } from '@/lib/rate-limiter';
 
-const CRON_SECRET = process.env.CRON_SECRET;
-
 export async function GET(request: NextRequest) {
   const PROCESS = 'API_EXECUTE';
+  const CRON_SECRET = process.env.CRON_SECRET;
   
   // 1. Rate Limiting
   if (isRateLimited()) {
@@ -16,11 +15,19 @@ export async function GET(request: NextRequest) {
 
   // 2. Autenticação
   const authHeader = request.headers.get('authorization');
-  const cronHeader = request.headers.get('x-cron-secret'); // Para Vercel Cron
+  
+  // Log de diagnóstico (seguro)
+  logger.debug(PROCESS, 'Verificando autorização', {
+    hasSecret: !!CRON_SECRET,
+    hasAuthHeader: !!authHeader,
+    secretPrefix: CRON_SECRET ? CRON_SECRET.substring(0, 3) : 'N/A'
+  });
 
-  if (authHeader !== `Bearer ${CRON_SECRET}` && cronHeader !== CRON_SECRET) {
+  const isValid = authHeader === `Bearer ${CRON_SECRET}`;
+
+  if (!isValid) {
     logger.warn(PROCESS, 'Tentativa de acesso não autorizada', {
-      ip: request.headers.get('x-forwarded-for'),
+      ip: request.headers.get('x-forwarded-for') || 'unknown',
     });
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
