@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { NewsBot } from '@/services/news-bot';
 import { logger } from '@/lib/logger';
 import { isRateLimited } from '@/lib/rate-limiter';
+import { revalidatePath } from 'next/cache';
 
 export async function GET(request: NextRequest) {
   const PROCESS = 'API_EXECUTE';
@@ -31,8 +32,12 @@ export async function GET(request: NextRequest) {
     const result = await NewsBot.runPipeline();
 
     if (result.success) {
+      // Força a atualização da Home Page e do Arquivo
+      revalidatePath('/');
+      revalidatePath('/arquivo');
+      
       return NextResponse.json({ 
-        message: 'Pipeline executada com sucesso!',
+        message: 'Pipeline executada com sucesso e cache revalidado!',
         timestamp: new Date().toISOString()
       }, { status: 200 });
     } else {

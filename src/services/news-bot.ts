@@ -23,13 +23,39 @@ export const NewsBot = {
 
       // Selecionar 2 Tech e 3 Trending
       const selectedArticles: RawArticle[] = [
-        ...techRaw.slice(0, 2),
-        ...trendingRaw.slice(0, 3)
+        ...techRaw.slice(0, 5), // Pegamos um pouco mais para garantir que teremos saldo após o filtro
+        ...trendingRaw.slice(0, 5)
       ];
 
-      logger.info(PROCESS_NAME, `Selecionadas ${selectedArticles.length} notícias para processamento.`);
+      // --- FILTRO DE DUPLICIDADE ---
+      logger.info(PROCESS_NAME, 'Verificando duplicidade no banco de dados...');
+      const urls = selectedArticles.map(a => a.url);
+      
+      const { data: existingNews, error: fetchError } = await supabaseAdmin
+        .from('noticias')
+        .select('fonte_url')
+        .in('fonte_url', urls);
 
-      for (const article of selectedArticles) {
+      if (fetchError) {
+        logger.error(PROCESS_NAME, 'Erro ao verificar duplicidade', fetchError.message);
+      }
+
+      const existingUrls = new Set(existingNews?.map(n => n.fonte_url) || []);
+      
+      // Filtrar as que não existem e limitar ao planejado (2 tech, 3 trending)
+      const uniqueTech = techRaw.filter(a => !existingUrls.has(a.url)).slice(0, 2);
+      const uniqueTrending = trendingRaw.filter(a => !existingUrls.has(a.url)).slice(0, 3);
+      
+      const finalArticles = [...uniqueTech, ...uniqueTrending];
+
+      if (finalArticles.length === 0) {
+        logger.info(PROCESS_NAME, 'Nenhuma notícia nova encontrada (todas já postadas).');
+        return { success: true, message: 'Nada novo para publicar.' };
+      }
+
+      logger.info(PROCESS_NAME, `${finalArticles.length} notícias inéditas selecionadas para processamento.`);
+
+      for (const article of finalArticles) {
         try {
           // 2. Reformular Conteúdo com Gemini/Groq
           let rewritten = await ContentService.rewriteArticle(article.title, article.content || article.description);
