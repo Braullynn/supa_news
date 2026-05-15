@@ -26,6 +26,9 @@ const nextConfig: NextConfig = {
     ],
   },
   async headers() {
+    const isDev = process.env.NODE_ENV === 'development';
+    const scriptSrc = `script-src 'self' 'unsafe-inline' ${isDev ? "'unsafe-eval'" : ""} va.vercel-scripts.com translate.google.com;`;
+
     return [
       {
         source: '/(.*)',
@@ -37,7 +40,7 @@ const nextConfig: NextConfig = {
           { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-inline' va.vercel-scripts.com translate.google.com; style-src 'self' 'unsafe-inline' fonts.googleapis.com translate.googleapis.com; img-src 'self' data: blob: *.supabase.co *.pollinations.ai images.unsplash.com translate.google.com www.gstatic.com; font-src 'self' fonts.gstatic.com; connect-src 'self' *.supabase.co translate.googleapis.com vitals.vercel-insights.com; frame-src 'self' translate.google.com; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;"
+            value: `default-src 'self'; ${scriptSrc} style-src 'self' 'unsafe-inline' fonts.googleapis.com translate.googleapis.com; img-src 'self' data: blob: *.supabase.co *.pollinations.ai images.unsplash.com translate.google.com www.gstatic.com; font-src 'self' fonts.gstatic.com; connect-src 'self' *.supabase.co translate.googleapis.com vitals.vercel-insights.com; frame-src 'self' translate.google.com; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;`
           },
           {
             key: 'Strict-Transport-Security',
