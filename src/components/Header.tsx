@@ -1,17 +1,23 @@
+'use client';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
 export default function Header() {
-  const currentDate = new Date().toLocaleDateString('pt-BR', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
+  const [currentDate, setCurrentDate] = useState<string>('');
+
+  useEffect(() => {
+    setCurrentDate(new Date().toLocaleDateString('pt-BR', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    }));
+  }, []);
 
   return (
     <header className="py-8">
       {/* Top Bar com Data e Tradução */}
-      <div className="flex justify-between items-center border-b border-black pb-2 mb-4 text-[12px] uppercase font-bold tracking-widest">
+      <div className="flex justify-between items-center border-b border-black pb-2 mb-4 text-[12px] uppercase font-bold tracking-widest min-h-[20px]">
         <span>{currentDate}</span>
         <div id="google_translate_element" className="translate-widget"></div>
       </div>

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { NewsBot } from '@/services/news-bot';
 import { logger } from '@/lib/logger';
 import { isRateLimited } from '@/lib/rate-limiter';
+import { revalidatePath } from 'next/cache';
 
 export async function GET(request: NextRequest) {
   const PROCESS = 'API_EXECUTE';
@@ -27,12 +28,20 @@ export async function GET(request: NextRequest) {
   try {
     logger.info(PROCESS, 'Execução autorizada disparada via API');
     
+    // Captura data customizada da query string (se houver)
+    const { searchParams } = new URL(request.url);
+    const customDate = searchParams.get('date') || undefined;
+
     // Executa a pipeline do bot
-    const result = await NewsBot.runPipeline();
+    const result = await NewsBot.runPipeline(customDate);
 
     if (result.success) {
+      // Força a atualização da Home Page e do Arquivo
+      revalidatePath('/');
+      revalidatePath('/arquivo');
+      
       return NextResponse.json({ 
-        message: 'Pipeline executada com sucesso!',
+        message: `Pipeline executada com sucesso${customDate ? ' para ' + customDate : ''} e cache revalidado!`,
         timestamp: new Date().toISOString()
       }, { status: 200 });
     } else {
