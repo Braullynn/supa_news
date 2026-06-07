@@ -15,7 +15,8 @@ function sanitizeLogData(data: any): any {
     .replace(/eyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g, '[JWT_REDACTED]')
     .replace(/AIzaSy[A-Za-z0-9_-]{30,}/g, '[GOOGLE_KEY_REDACTED]')
     .replace(/gsk_[A-Za-z0-9]{40,}/g, '[GROQ_KEY_REDACTED]')
-    .replace(/sk-[A-Za-z0-9]{40,}/g, '[API_KEY_REDACTED]');
+    .replace(/sk-[A-Za-z0-9]{40,}/g, '[API_KEY_REDACTED]')
+    .replace(/cf[au]t_[A-Za-z0-9_-]+/g, '[CLOUDFLARE_TOKEN_REDACTED]');
     
   return typeof data === 'string' ? sanitized : JSON.parse(sanitized);
 }

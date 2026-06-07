@@ -79,6 +79,16 @@ O `NewsBot.runPipeline()` executa os seguintes passos:
 
 ---
 
+## 💾 Sistema de Backup (Cloudflare R2)
+
+O sistema conta com um backup automatizado rodando na Vercel via Cron Job. O backup é ativado todos os dias às 03:00 UTC (Meia-noite BRT).
+
+- **O que faz:** Lê toda a tabela `noticias`, transforma em JSON, comprime com GZip e envia para o bucket `supa-news-backups` no Cloudflare R2.
+- **Retenção:** Os backups ficam armazenados no bucket e, durante cada execução, um script de limpeza exclui os arquivos com mais de **10 dias** de idade.
+- **Endpoint:** `GET /api/backup/executar` (protegido com o mesmo `CRON_SECRET`).
+
+---
+
 ## 🔒 Segurança e Boas Práticas
 - **Autenticação:** O endpoint `/api/noticias/executar` exige o header `Authorization: Bearer <CRON_SECRET>` ou `x-cron-secret`.
 - **Rate Limiting:** Limite de 3 execuções por hora para evitar consumo excessivo de APIs.
