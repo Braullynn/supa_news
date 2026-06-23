@@ -31,3 +31,7 @@ yarn-error.log*
 .DS_Store
 Thumbs.db
 test/
+
+# Admin Local (Oculto de Produção)
+src/app/admin-painel/
+admin-painel-bolt/
